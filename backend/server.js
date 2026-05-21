@@ -13,7 +13,9 @@ import analyticsRoutes from './routes/analytics.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
+
+export default app;
 
 initDatabase();
 
@@ -42,27 +44,28 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`AgriRoute NE API running on http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
+// Only start the HTTP server when running directly (local dev), not on Vercel
+const isMain = process.argv[1] &&
+  (process.argv[1].endsWith('server.js') || process.argv[1].endsWith('dev.js'));
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\nPort ${PORT} is already in use. Stop the other server first:`);
-    console.error(`  Get-NetTCPConnection -LocalPort ${PORT} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n`);
-    process.exit(1);
-  }
-  throw err;
-});
+if (isMain) {
+  const server = app.listen(PORT, () => {
+    console.log(`AgriRoute NE API running on http://localhost:${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
+  });
 
-// Release port when stopping (Ctrl+C or node --watch restart)
-function shutdown() {
-  if (!server.listening) {
-    process.exit(0);
-    return;
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\nPort ${PORT} is already in use. Stop the other server first.\n`);
+      process.exit(1);
+    }
+    throw err;
+  });
+
+  function shutdown() {
+    if (!server.listening) { process.exit(0); return; }
+    server.close(() => setTimeout(() => process.exit(0), 150));
   }
-  server.close(() => setTimeout(() => process.exit(0), 150));
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);

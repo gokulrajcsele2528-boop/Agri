@@ -4,9 +4,6 @@
   "description": "Low-cost Agricultural Produce Transportation API - North Eastern Region",
   "main": "server.js",
   "type": "module",
-  "engines": {
-    "node": ">=22.5.0"
-  },
   "scripts": {
     "start": "node server.js",
     "dev": "node scripts/dev.js",

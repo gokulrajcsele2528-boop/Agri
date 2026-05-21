@@ -99,10 +99,13 @@ try {
   }
 }
 
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA foreign_keys = ON');
-
 export function initDatabase() {
+  try {
+    db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA foreign_keys = ON');
+  } catch {
+    // mock db — pragmas not needed
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,

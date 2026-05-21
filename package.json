@@ -9,5 +9,14 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev": "node dev.js",
     "setup": "npm run install:all && npm run seed"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^11.0.3"
   }
 }
