@@ -1,0 +1,25 @@
+{
+  "name": "agriroute-ne-backend",
+  "version": "1.0.0",
+  "description": "Low-cost Agricultural Produce Transportation API - North Eastern Region",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node scripts/dev.js",
+    "dev:watch": "node --watch server.js",
+    "seed": "node db/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^11.0.3"
+  }
+}
