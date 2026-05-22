@@ -1,10 +1,24 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(__dirname, 'agriroute.db');
+let dbPath = path.join(__dirname, 'agriroute.db');
+
+// Vercel Serverless environment compatibility: copy SQLite db to writeable /tmp directory
+if (process.env.VERCEL) {
+  const tmpDbPath = '/tmp/agriroute.db';
+  try {
+    if (!fs.existsSync(tmpDbPath)) {
+      fs.copyFileSync(dbPath, tmpDbPath);
+    }
+    dbPath = tmpDbPath;
+  } catch (err) {
+    console.error('Failed to copy database to /tmp:', err.message);
+  }
+}
 
 let db;
 try {
@@ -106,171 +120,175 @@ export function initDatabase() {
   } catch {
     // mock db — pragmas not needed
   }
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      phone TEXT,
-      role TEXT NOT NULL CHECK(role IN ('farmer','transporter','admin','fpo')),
-      state TEXT,
-      district TEXT,
-      village TEXT,
-      latitude REAL,
-      longitude REAL,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        phone TEXT,
+        role TEXT NOT NULL CHECK(role IN ('farmer','transporter','admin','fpo')),
+        state TEXT,
+        district TEXT,
+        village TEXT,
+        latitude REAL,
+        longitude REAL,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
 
-    CREATE TABLE IF NOT EXISTS collection_hubs (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      type TEXT NOT NULL,
-      state TEXT NOT NULL,
-      district TEXT NOT NULL,
-      village TEXT,
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      road_distance_km REAL,
-      capacity_kg INTEGER,
-      contact_phone TEXT,
-      is_active INTEGER DEFAULT 1
-    );
+      CREATE TABLE IF NOT EXISTS collection_hubs (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        state TEXT NOT NULL,
+        district TEXT NOT NULL,
+        village TEXT,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        road_distance_km REAL,
+        capacity_kg INTEGER,
+        contact_phone TEXT,
+        is_active INTEGER DEFAULT 1
+      );
 
-    CREATE TABLE IF NOT EXISTS road_heads (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      state TEXT NOT NULL,
-      district TEXT NOT NULL,
-      highway_name TEXT,
-      latitude REAL NOT NULL,
-      longitude REAL NOT NULL,
-      market_name TEXT,
-      cold_storage INTEGER DEFAULT 0
-    );
+      CREATE TABLE IF NOT EXISTS road_heads (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        state TEXT NOT NULL,
+        district TEXT NOT NULL,
+        highway_name TEXT,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL,
+        market_name TEXT,
+        cold_storage INTEGER DEFAULT 0
+      );
 
-    CREATE TABLE IF NOT EXISTS produce_types (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      category TEXT NOT NULL,
-      shelf_life_days INTEGER,
-      perishability TEXT,
-      avg_price_per_kg REAL
-    );
+      CREATE TABLE IF NOT EXISTS produce_types (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        shelf_life_days INTEGER,
+        perishability TEXT,
+        avg_price_per_kg REAL
+      );
 
-    CREATE TABLE IF NOT EXISTS produce_listings (
-      id TEXT PRIMARY KEY,
-      farmer_id TEXT NOT NULL,
-      produce_type_id TEXT NOT NULL,
-      quantity_kg REAL NOT NULL,
-      quality_grade TEXT,
-      harvest_date TEXT,
-      ready_date TEXT,
-      status TEXT DEFAULT 'listed',
-      hub_id TEXT,
-      notes TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (farmer_id) REFERENCES users(id),
-      FOREIGN KEY (produce_type_id) REFERENCES produce_types(id)
-    );
+      CREATE TABLE IF NOT EXISTS produce_listings (
+        id TEXT PRIMARY KEY,
+        farmer_id TEXT NOT NULL,
+        produce_type_id TEXT NOT NULL,
+        quantity_kg REAL NOT NULL,
+        quality_grade TEXT,
+        harvest_date TEXT,
+        ready_date TEXT,
+        status TEXT DEFAULT 'listed',
+        hub_id TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (farmer_id) REFERENCES users(id),
+        FOREIGN KEY (produce_type_id) REFERENCES produce_types(id)
+      );
 
-    CREATE TABLE IF NOT EXISTS vehicles (
-      id TEXT PRIMARY KEY,
-      transporter_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      registration TEXT,
-      capacity_kg INTEGER NOT NULL,
-      cost_per_km REAL NOT NULL,
-      fuel_type TEXT,
-      is_available INTEGER DEFAULT 1,
-      current_hub_id TEXT,
-      FOREIGN KEY (transporter_id) REFERENCES users(id)
-    );
+      CREATE TABLE IF NOT EXISTS vehicles (
+        id TEXT PRIMARY KEY,
+        transporter_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        registration TEXT,
+        capacity_kg INTEGER NOT NULL,
+        cost_per_km REAL NOT NULL,
+        fuel_type TEXT,
+        is_available INTEGER DEFAULT 1,
+        current_hub_id TEXT,
+        FOREIGN KEY (transporter_id) REFERENCES users(id)
+      );
 
-    CREATE TABLE IF NOT EXISTS transport_bookings (
-      id TEXT PRIMARY KEY,
-      farmer_id TEXT NOT NULL,
-      listing_id TEXT,
-      from_hub_id TEXT NOT NULL,
-      to_road_head_id TEXT NOT NULL,
-      vehicle_id TEXT,
-      transporter_id TEXT,
-      quantity_kg REAL NOT NULL,
-      distance_km REAL,
-      estimated_cost REAL,
-      subsidy_amount REAL DEFAULT 0,
-      final_cost REAL,
-      status TEXT DEFAULT 'pending',
-      pickup_date TEXT,
-      pickup_slot TEXT,
-      tracking_code TEXT UNIQUE,
-      created_at TEXT DEFAULT (datetime('now')),
-      completed_at TEXT,
-      FOREIGN KEY (farmer_id) REFERENCES users(id)
-    );
+      CREATE TABLE IF NOT EXISTS transport_bookings (
+        id TEXT PRIMARY KEY,
+        farmer_id TEXT NOT NULL,
+        listing_id TEXT,
+        from_hub_id TEXT NOT NULL,
+        to_road_head_id TEXT NOT NULL,
+        vehicle_id TEXT,
+        transporter_id TEXT,
+        quantity_kg REAL NOT NULL,
+        distance_km REAL,
+        estimated_cost REAL,
+        subsidy_amount REAL DEFAULT 0,
+        final_cost REAL,
+        status TEXT DEFAULT 'pending',
+        pickup_date TEXT,
+        pickup_slot TEXT,
+        tracking_code TEXT UNIQUE,
+        created_at TEXT DEFAULT (datetime('now')),
+        completed_at TEXT,
+        FOREIGN KEY (farmer_id) REFERENCES users(id)
+      );
 
-    CREATE TABLE IF NOT EXISTS government_schemes (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT,
-      subsidy_percent REAL,
-      max_subsidy REAL,
-      states TEXT,
-      eligibility TEXT,
-      is_active INTEGER DEFAULT 1
-    );
+      CREATE TABLE IF NOT EXISTS government_schemes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        subsidy_percent REAL,
+        max_subsidy REAL,
+        states TEXT,
+        eligibility TEXT,
+        is_active INTEGER DEFAULT 1
+      );
 
-    CREATE TABLE IF NOT EXISTS market_prices (
-      id TEXT PRIMARY KEY,
-      produce_type_id TEXT NOT NULL,
-      market_name TEXT NOT NULL,
-      state TEXT NOT NULL,
-      price_per_kg REAL NOT NULL,
-      date TEXT NOT NULL,
-      FOREIGN KEY (produce_type_id) REFERENCES produce_types(id)
-    );
+      CREATE TABLE IF NOT EXISTS market_prices (
+        id TEXT PRIMARY KEY,
+        produce_type_id TEXT NOT NULL,
+        market_name TEXT NOT NULL,
+        state TEXT NOT NULL,
+        price_per_kg REAL NOT NULL,
+        date TEXT NOT NULL,
+        FOREIGN KEY (produce_type_id) REFERENCES produce_types(id)
+      );
 
-    CREATE TABLE IF NOT EXISTS crop_advisories (
-      id TEXT PRIMARY KEY,
-      state TEXT NOT NULL,
-      season TEXT NOT NULL,
-      crop TEXT NOT NULL,
-      advisory TEXT NOT NULL,
-      pest_alert TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
+      CREATE TABLE IF NOT EXISTS crop_advisories (
+        id TEXT PRIMARY KEY,
+        state TEXT NOT NULL,
+        season TEXT NOT NULL,
+        crop TEXT NOT NULL,
+        advisory TEXT NOT NULL,
+        pest_alert TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      );
 
-    CREATE TABLE IF NOT EXISTS weather_alerts (
-      id TEXT PRIMARY KEY,
-      state TEXT NOT NULL,
-      district TEXT,
-      alert_type TEXT NOT NULL,
-      severity TEXT NOT NULL,
-      message TEXT NOT NULL,
-      valid_until TEXT
-    );
+      CREATE TABLE IF NOT EXISTS weather_alerts (
+        id TEXT PRIMARY KEY,
+        state TEXT NOT NULL,
+        district TEXT,
+        alert_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        message TEXT NOT NULL,
+        valid_until TEXT
+      );
 
-    CREATE TABLE IF NOT EXISTS fpo_organizations (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      state TEXT NOT NULL,
-      district TEXT NOT NULL,
-      member_count INTEGER,
-      contact_email TEXT,
-      contact_phone TEXT
-    );
+      CREATE TABLE IF NOT EXISTS fpo_organizations (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        state TEXT NOT NULL,
+        district TEXT NOT NULL,
+        member_count INTEGER,
+        contact_email TEXT,
+        contact_phone TEXT
+      );
 
-    CREATE TABLE IF NOT EXISTS payments (
-      id TEXT PRIMARY KEY,
-      booking_id TEXT NOT NULL,
-      amount REAL NOT NULL,
-      method TEXT,
-      status TEXT DEFAULT 'pending',
-      transaction_ref TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (booking_id) REFERENCES transport_bookings(id)
-    );
-  `);
+      CREATE TABLE IF NOT EXISTS payments (
+        id TEXT PRIMARY KEY,
+        booking_id TEXT NOT NULL,
+        amount REAL NOT NULL,
+        method TEXT,
+        status TEXT DEFAULT 'pending',
+        transaction_ref TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (booking_id) REFERENCES transport_bookings(id)
+      );
+    `);
+  } catch (err) {
+    console.error('Table creation/verification skipped or failed:', err.message);
+  }
 }
 
 export default db;
