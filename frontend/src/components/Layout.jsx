@@ -31,7 +31,7 @@ const adminLinks = [
 ];
 
 export default function Layout() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, switchUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -40,6 +40,19 @@ export default function Layout() {
     : user?.role === 'admin' ? adminLinks : [];
 
   const links = [...publicLinks, ...(isAuthenticated ? roleLinks : [])];
+
+  const handleRoleChange = async (role) => {
+    const newUser = await switchUser(role);
+    if (newUser) {
+      if (newUser.role === 'farmer' || newUser.role === 'fpo') {
+        navigate('/dashboard');
+      } else if (newUser.role === 'transporter') {
+        navigate('/transporter');
+      } else if (newUser.role === 'admin') {
+        navigate('/admin');
+      }
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -58,27 +71,37 @@ export default function Layout() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex">
-            {links.slice(0, 7).map(({ to, label }) => (
+          <nav className="hidden items-center gap-1 lg:flex flex-wrap">
+            {publicLinks.map(({ to, label }) => (
               <NavLink key={to} to={to} className={({ isActive }) =>
                 `rounded-lg px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-forest-100 text-forest-800' : 'text-gray-600 hover:bg-forest-50'}`
+              }>{label}</NavLink>
+            ))}
+            {isAuthenticated && roleLinks.map(({ to, label }) => (
+              <NavLink key={to} to={to} className={({ isActive }) =>
+                `rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive ? 'bg-earth-100 text-earth-800' : 'text-earth-700 bg-earth-50 hover:bg-earth-100'}`
               }>{label}</NavLink>
             ))}
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
-            {isAuthenticated ? (
-              <>
-                <span className="text-sm text-gray-600">Hi, <strong>{user.name.split(' ')[0]}</strong></span>
-                <button onClick={handleLogout} className="btn-secondary !py-2 !px-3 text-xs">
-                  <LogOut className="h-4 w-4" /> Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="text-sm font-semibold text-forest-700 hover:text-forest-900">Login</Link>
-                <Link to="/register" className="btn-primary !py-2">Register</Link>
-              </>
+            <div className="flex items-center gap-2 bg-forest-50 rounded-xl p-1 border border-forest-100">
+              <span className="text-xs font-semibold text-forest-700 px-2">Role:</span>
+              <select
+                value={user?.role || 'farmer'}
+                onChange={(e) => handleRoleChange(e.target.value)}
+                className="bg-white border border-forest-200 text-xs font-semibold text-forest-800 rounded-lg py-1 px-2.5 focus:ring-1 focus:ring-forest-500 cursor-pointer outline-none shadow-sm"
+              >
+                <option value="farmer">🌾 Farmer</option>
+                <option value="fpo">🏢 FPO</option>
+                <option value="transporter">🚚 Transporter</option>
+                <option value="admin">👑 Admin</option>
+              </select>
+            </div>
+            {isAuthenticated && user && (
+              <span className="text-xs text-gray-600">
+                Hi, <strong>{user.name.split(' ')[0]}</strong>
+              </span>
             )}
           </div>
 
@@ -96,12 +119,24 @@ export default function Layout() {
               <Icon className="h-4 w-4" /> {label}
             </NavLink>
           ))}
-          {!isAuthenticated && (
-            <div className="mt-3 flex gap-2">
-              <Link to="/login" className="btn-secondary flex-1" onClick={() => setMobileOpen(false)}>Login</Link>
-              <Link to="/register" className="btn-primary flex-1" onClick={() => setMobileOpen(false)}>Register</Link>
+          <div className="mt-3 flex flex-col gap-2 border-t border-forest-100 pt-3">
+            <div className="flex items-center justify-between bg-forest-50 rounded-xl p-2 border border-forest-100">
+              <span className="text-sm font-semibold text-forest-700">Switch Role:</span>
+              <select
+                value={user?.role || 'farmer'}
+                onChange={(e) => {
+                  handleRoleChange(e.target.value);
+                  setMobileOpen(false);
+                }}
+                className="bg-white border border-forest-200 text-sm font-semibold text-forest-800 rounded-lg py-1 px-3 focus:ring-1 focus:ring-forest-500 cursor-pointer outline-none"
+              >
+                <option value="farmer">🌾 Farmer</option>
+                <option value="fpo">🏢 FPO</option>
+                <option value="transporter">🚚 Transporter</option>
+                <option value="admin">👑 Admin</option>
+              </select>
             </div>
-          )}
+          </div>
         </div>
       )}
 

@@ -21,8 +21,8 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
+        <Route path="login" element={<Navigate to="/" replace />} />
+        <Route path="register" element={<Navigate to="/" replace />} />
         <Route path="map" element={<HubMapPage />} />
         <Route path="market" element={<MarketPrices />} />
         <Route path="advisory" element={<CropAdvisory />} />

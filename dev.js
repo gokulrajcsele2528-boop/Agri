@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
 
 console.log('\x1b[36m%s\x1b[0m', '🚀 Starting AgriRoute NE Development Servers...\n');
 

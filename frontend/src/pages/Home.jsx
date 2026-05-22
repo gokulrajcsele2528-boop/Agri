@@ -44,8 +44,8 @@ export default function Home() {
               AgriRoute NE connects tribal & hill farmers in Assam, Manipur, Meghalaya and beyond to mandis via affordable first-mile logistics, government subsidies, and real-time tracking.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
-              <Link to="/register" className="btn-primary !bg-white !text-forest-800 hover:!bg-forest-50">
-                Register as Farmer <ArrowRight className="h-4 w-4" />
+              <Link to="/dashboard" className="btn-primary !bg-white !text-forest-800 hover:!bg-forest-50">
+                Go to Dashboard <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/book-transport" className="rounded-xl border-2 border-white/40 px-5 py-2.5 text-sm font-semibold hover:bg-white/10">
                 Book Transport
@@ -102,15 +102,12 @@ export default function Home() {
           <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
             <div>
               <h2 className="font-display text-2xl font-bold lg:text-3xl">Ready to move your harvest?</h2>
-              <p className="mt-2 text-earth-100">Join 450+ FPO members already using AgriRoute NE demo platform</p>
+              <p className="mt-2 text-earth-100">Access all roles (Farmer, Transporter, FPO, Admin) instantly from the role switcher in the navigation bar above!</p>
             </div>
-            <Link to="/login" className="btn-primary !bg-white !text-earth-800 shrink-0">
-              <Users className="h-4 w-4" /> Demo Login
+            <Link to="/dashboard" className="btn-primary !bg-white !text-earth-800 shrink-0">
+              <Users className="h-4 w-4" /> Go to Dashboard
             </Link>
           </div>
-          <p className="mt-6 text-sm text-earth-100/80">
-            Demo: farmer1@demo.com / demo123 • transporter1@demo.com / demo123 • admin@agriroute.com / admin123
-          </p>
         </div>
       </section>
     </div>
